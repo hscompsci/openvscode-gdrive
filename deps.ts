@@ -2,6 +2,7 @@
 
 const ROOT = "vscode";
 
+Deno.chdir(dirname(Deno.mainModule));
 if(exists(ROOT)) {
 	console.error(ROOT + "/ already exists!");
 	console.error("If you want to replace it, delete it and rerun this script.");
@@ -54,6 +55,12 @@ async function releaseInfo(org: string, repo: string, tag = ""): Promise<Release
 		"https://api.github.com/repos/" + org + "/" + repo + "/releases/" + release,
 	);
 	return request.json();
+}
+
+function dirname(url: string): string {
+	const hierarchy = url.replace("file://", "").split("/");
+	hierarchy.pop();
+	return hierarchy.join("/");
 }
 
 function basename(url: string): string {
