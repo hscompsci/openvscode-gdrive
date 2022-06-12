@@ -1,0 +1,25 @@
+#!/bin/sh
+
+read access_token
+read refresh_token
+read expiry
+cd
+
+cat <<-tac >.rclone.conf
+	[drive]
+	type = drive
+	scope = drive.file
+	token = {"access_token":"$access_token","token_type":"Bearer","refresh_token":"$refresh_token","expiry":"$expiry"}
+tac
+rclone mount --daemon --allow-non-empty drive: ~
+
+for dotfile in .*
+do
+	if [ -f "$dotfile" -a ! -e ~/"$dotfile" -a "$dotfile" != ".rclone.conf" ]
+	then
+		mv "$dotfile" ~
+	fi
+done
+cd
+
+exec unshare -U openvscode-server "$@"
