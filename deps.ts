@@ -25,6 +25,7 @@ if(!exists("chroot/jail"))
 console.log("Preparing root directory for jails...");
 Deno.renameSync(dropExtension(vscode), ROOT);
 Deno.renameSync(dropExtension(rclone) + "/rclone", ROOT + "/bin/rclone");
+Deno.linkSync("plugins/openvscode-drive", ROOT + "/bin/openvscode-drive");
 Deno.remove(dropExtension(rclone), {recursive: true});
 
 console.log("All dependencies fetched!");
