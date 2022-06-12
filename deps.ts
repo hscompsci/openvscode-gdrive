@@ -18,10 +18,15 @@ const rclone = await releaseUrl("rclone", "rclone", "-linux-amd64.zip");
 await download(rclone);
 await unpack(basename(rclone), ["unzip"]);
 
+console.log("Downloading container management tools...")
+if(!exists("chroot/jail"))
+	await Deno.run({cmd: ["git", "submodule", "update", "--init"]}).status();
+
 console.log("Preparing root directory for jails...");
 Deno.renameSync(dropExtension(vscode), ROOT);
 Deno.renameSync(dropExtension(rclone) + "/rclone", ROOT + "/bin/rclone");
 Deno.remove(dropExtension(rclone), {recursive: true});
+
 console.log("All dependencies fetched!");
 
 async function releaseUrl(org: string, repo: string, suffix: string): Promise<string> {
