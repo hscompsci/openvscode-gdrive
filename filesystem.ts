@@ -1,8 +1,8 @@
 export const ROOT = "vscode";
 
-export function exists(filename: string): boolean {
+export async function exists(filename: string): Promise<boolean> {
 	try {
-		Deno.statSync(filename);
+		await Deno.stat(filename);
 		return true;
 	} catch {
 		return false;

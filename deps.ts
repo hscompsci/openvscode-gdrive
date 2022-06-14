@@ -3,7 +3,7 @@
 import { ROOT, exists } from "./filesystem.ts";
 
 Deno.chdir(dirname(Deno.mainModule));
-if(exists(ROOT)) {
+if(await exists(ROOT)) {
 	console.error(ROOT + "/ already exists!");
 	console.error("If you want to replace it, delete it and rerun this script.");
 	console.error("You might first need to run: $ chroot/unprotect " + ROOT);
@@ -19,7 +19,7 @@ await download(rclone);
 await unpack(basename(rclone), ["unzip"]);
 
 console.log("Downloading container management tools...")
-if(!exists("chroot/jail"))
+if(!await exists("chroot/jail"))
 	await Deno.run({cmd: ["git", "submodule", "update", "--init"]}).status();
 
 console.log("Preparing root directory for jails...");
@@ -79,7 +79,7 @@ function dropExtension(url: string): string {
 
 async function download(url: string) {
 	const filename = basename(url);
-	if(exists(filename))
+	if(await exists(filename))
 		console.warn("Skipping download of " + filename + " that already exists.");
 	else {
 		console.log("Downloading " + filename + "...");
@@ -90,7 +90,7 @@ async function download(url: string) {
 }
 
 async function unpack(filename: string, cmd: Readonly<string[]>): Promise<boolean> {
-	if(exists(dropExtension(filename)))
+	if(await exists(dropExtension(filename)))
 		return true;
 
 	console.log("Unpacking " + filename + "...");
