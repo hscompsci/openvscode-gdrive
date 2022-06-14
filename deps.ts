@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-run --check
 
-const ROOT = "vscode";
+import { ROOT, exists } from "./filesystem.ts";
 
 Deno.chdir(dirname(Deno.mainModule));
 if(exists(ROOT)) {
@@ -75,15 +75,6 @@ function basename(url: string): string {
 
 function dropExtension(url: string): string {
 	return basename(url).replace(/\.[^0-9].+/, "");
-}
-
-function exists(filename: string): boolean {
-	try {
-		Deno.statSync(filename);
-		return true;
-	} catch {
-		return false;
-	}
 }
 
 async function download(url: string) {
