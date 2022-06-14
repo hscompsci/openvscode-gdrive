@@ -70,7 +70,7 @@ function dirname(url: string): string {
 }
 
 function basename(url: string): string {
-	return url.split("/").pop()!;
+	return url.split("/").pop() ?? url;
 }
 
 function dropExtension(url: string): string {
