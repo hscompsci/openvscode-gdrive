@@ -98,13 +98,12 @@ async function download(url: string) {
 	}
 }
 
-async function unpack(filename: string, cmd: string[]): Promise<boolean> {
+async function unpack(filename: string, cmd: Readonly<string[]>): Promise<boolean> {
 	if(exists(dropExtension(filename)))
 		return true;
 
 	console.log("Unpacking " + filename + "...");
-	cmd.push(filename);
-	return (await Deno.run({cmd}).status()).success;
+	return (await Deno.run({cmd: [...cmd, filename]}).status()).success;
 }
 
 type ReleaseInfo = {
