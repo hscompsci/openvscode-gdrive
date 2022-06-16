@@ -18,6 +18,10 @@ const rclone = await releaseUrl("rclone", "rclone", "-linux-amd64.zip");
 await download(rclone);
 await unpack(basename(rclone), ["unzip"]);
 
+console.log("Vendoring TypeScript dependencies...");
+if(!await exists("vendor"))
+	await Deno.run({cmd: ["deno", "vendor", "main.ts"]}).status();
+
 console.log("Downloading container management tools...")
 if(!await exists("chroot/jail"))
 	await Deno.run({cmd: ["git", "submodule", "update", "--init"]}).status();

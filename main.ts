@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=refresh_tokens.json --allow-run=chroot/jail --check
+#!/usr/bin/env -S deno run --import-map vendor/import_map.json --allow-net --allow-read=. --allow-write=refresh_tokens.json --allow-run=chroot/jail --check
 
 import { Status, serve } from "https://deno.land/std@0.136.0/http/mod.ts";
 import { BufReader } from "https://deno.land/std@0.136.0/io/mod.ts";
