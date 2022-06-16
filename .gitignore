@@ -1,3 +1,5 @@
 openvscode-server-v*
+config.json
 rclone-v*
+refresh_tokens.json
 vscode
