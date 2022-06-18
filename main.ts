@@ -1,5 +1,6 @@
 #!/usr/bin/env -S deno run --import-map vendor/import_map.json --allow-net --allow-read=. --allow-write=refresh_tokens.json --allow-run=chroot/jail --check
 
+import { Deferred, deferred } from "https://deno.land/std@0.136.0/async/mod.ts";
 import { Status, serve } from "https://deno.land/std@0.136.0/http/mod.ts";
 import { BufReader } from "https://deno.land/std@0.136.0/io/mod.ts";
 import { basename } from "https://deno.land/std@0.136.0/path/mod.ts";
@@ -91,7 +92,40 @@ function proxy(request: Request, port: number): Promise<Response> {
 	const url = new URL(request.url);
 	url.hostname = "localhost";
 	url.port = String(port);
-	return fetch(new Request(String(url), request), {redirect: "manual"});
+
+	if(request.headers.get("upgrade") != "websocket")
+		return fetch(new Request(String(url), request), {redirect: "manual"});
+	else
+		url.protocol = "ws";
+
+	const serverSocket = new WebSocket(String(url));
+	const {response, socket} = Deno.upgradeWebSocket(request);
+
+	const serverBootstrap = deferred();
+	serverSocket.onopen = serverBootstrap.resolve;
+
+	const bootstrap = deferred();
+	socket.onopen = bootstrap.resolve;
+
+	serverSocket.onmessage = async function(message) {
+		await bootstrap;
+		socket.send(message.data);
+	};
+	socket.onmessage = async function(message) {
+		await serverBootstrap;
+		serverSocket.send(message.data);
+	};
+
+	serverSocket.onclose = function() {
+		socket.onmessage = null;
+		socket.close();
+	};
+	socket.onclose = function() {
+		serverSocket.onmessage = null;
+		serverSocket.close();
+	};
+
+	return Promise.resolve(response);
 }
 
 async function parsePortAndToken(stdout: Deno.Reader): Promise<{port: number, token: string}> {
