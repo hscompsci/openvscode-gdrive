@@ -82,7 +82,7 @@ async function handler(request: Request): Promise<Response> {
 		);
 	else {
 		const vscode = Deno.run({
-			cmd: ["chroot/jail", "vscode", "-c", "openvscode-drive"],
+			cmd: ["chroot/jail", "vscode", "-c", "openvscode-drive", "--port", "0"],
 			stdin: "piped",
 			stdout: "piped",
 		});
