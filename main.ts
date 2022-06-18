@@ -151,9 +151,9 @@ if(Deno.args.length > 2 || (Deno.args.length && Deno.args[0].startsWith("-"))) {
 	Deno.exit(1);
 }
 if(Deno.args.length >= 1)
-	address.hostname = Deno.args[1];
+	address.hostname = Deno.args[0];
 if(Deno.args.length >= 2)
-	address.port = Number(Deno.args[2]);
+	address.port = Number(Deno.args[1]);
 if(!exists(ROOT)) {
 	console.error("Missing " + ROOT + "/ directory.  Did you run ./deps.ts?");
 	Deno.exit(2);
