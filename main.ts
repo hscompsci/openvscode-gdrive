@@ -9,7 +9,7 @@ import { ROOT, exists } from "./filesystem.ts";
 import { loadConfig } from "./config.ts";
 import { authUrl, obtainToken } from "./oauth.ts";
 import { decodeId } from "./openid.ts";
-import { getToken, setToken } from "./refresh_tokens.ts";
+import { BACKING_FILE, getToken, setToken } from "./refresh_tokens.ts";
 
 const CONFIG_FILE = "config.json";
 
@@ -55,20 +55,32 @@ async function handler(request: Request): Promise<Response> {
 
 	const expiry = new Date(Date.now() + tokens.expires_in * 1000);
 	const email = decodeId(tokens.id_token).email;
-	if(tokens.refresh_token)
+	let newUser = "";
+	if(tokens.refresh_token) {
 		await setToken(email, tokens.refresh_token);
-	else {
+		newUser = " for the first time";
+	} else {
 		const stored = await getToken(email);
-		if(!stored)
+		if(!stored) {
+			console.warn("User " + email + " missing from " + BACKING_FILE + "!");
 			return new Response(
 				"User is banned: " + email,
 				{status: Status.Forbidden},
 			);
+		}
 		tokens.refresh_token = stored;
 	}
+	console.log("User " + email + " logged in" + newUser);
 
 	let vsCodeToken = emailToToken[email];
-	if(!vsCodeToken) {
+	if(vsCodeToken)
+		console.log(
+			"Reusing user "
+				+ email
+				+ "'s existing VSCode instance at port "
+				+ tokenToPort[vsCodeToken]
+		);
+	else {
 		const vscode = Deno.run({
 			cmd: ["chroot/jail", "vscode", "-c", "openvscode-drive"],
 			stdin: "piped",
@@ -83,6 +95,7 @@ async function handler(request: Request): Promise<Response> {
 		tokenToPort[token] = port;
 		emailToToken[email] = token;
 		vsCodeToken = token;
+		console.log("Started new VSCode instance for user " + email + " on port " + port);
 	}
 	url.search = "?tkn=" + vsCodeToken;
 	return Response.redirect(String(url));
@@ -165,3 +178,4 @@ if(!config) {
 	Deno.exit(3);
 }
 serve(handler, address);
+console.log("Started Web server at http://" + address.hostname + ":" + (address.port ?? 8000));

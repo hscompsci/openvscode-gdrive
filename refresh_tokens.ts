@@ -1,7 +1,7 @@
 import { exists } from "./filesystem.ts";
 import { mutex } from "./mutex.ts";
 
-const BACKING_FILE = "refresh_tokens.json";
+export const BACKING_FILE = "refresh_tokens.json";
 
 let tokens: {[_: string]: string} | null = null;
 let lock = mutex();
