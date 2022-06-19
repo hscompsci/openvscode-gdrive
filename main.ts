@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --import-map vendor/import_map.json --allow-net --allow-read=. --allow-write=refresh_tokens.json --allow-run=chroot/jail --check
 
-import { Deferred, deferred } from "https://deno.land/std@0.136.0/async/mod.ts";
+import { deferred } from "https://deno.land/std@0.136.0/async/mod.ts";
 import { Status, serve } from "https://deno.land/std@0.136.0/http/mod.ts";
 import { BufReader } from "https://deno.land/std@0.136.0/io/mod.ts";
 import { basename } from "https://deno.land/std@0.136.0/path/mod.ts";
@@ -19,7 +19,7 @@ const tokenToPort: {[_: string]: number} = {};
 async function handler(request: Request): Promise<Response> {
 	const url = new URL(request.url);
 
-	let token = request.headers.get("Cookie")?.split(", ").find(function(each) {
+	const token = request.headers.get("Cookie")?.split(", ").find(function(each) {
 		return each.startsWith("vscode-tkn=");
 	})?.split("=")[1] ?? url.searchParams.get("tkn");
 	if(token && Object.hasOwn(tokenToPort, token))

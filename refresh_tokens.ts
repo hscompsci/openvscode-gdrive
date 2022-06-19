@@ -4,7 +4,7 @@ import { mutex } from "./mutex.ts";
 export const BACKING_FILE = "refresh_tokens.json";
 
 let tokens: {[_: string]: string} | null = null;
-let lock = mutex();
+const lock = mutex();
 
 export async function getToken(username: string): Promise<string | null> {
 	if(!tokens)
