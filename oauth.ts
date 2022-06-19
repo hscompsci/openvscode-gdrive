@@ -6,10 +6,13 @@ export function authUrl(
 	scope: string,
 	prompt: AuthPrompt = "none",
 	offline = false,
+	state?: string,
 ): string {
 	let accessType = "";
 	if(offline)
 		accessType = "&access_type=offline";
+	if(state)
+		accessType += "&state=" + state;
 	return config.auth_uri
 		+ "?response_type=code"
 		+ "&client_id=" + config.client_id

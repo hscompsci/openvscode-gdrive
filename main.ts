@@ -1,6 +1,7 @@
 #!/usr/bin/env -S deno run --import-map vendor/import_map.json --allow-net --allow-read=. --allow-write=refresh_tokens.json --allow-run=chroot/jail --check
 
 import { deferred } from "https://deno.land/std@0.136.0/async/mod.ts";
+import { decode, encode } from "https://deno.land/std@0.136.0/encoding/base64.ts";
 import { Status, serve } from "https://deno.land/std@0.136.0/http/mod.ts";
 import { BufReader } from "https://deno.land/std@0.136.0/io/mod.ts";
 import { basename } from "https://deno.land/std@0.136.0/path/mod.ts";
@@ -15,13 +16,21 @@ const CONFIG_FILE = "config.json";
 
 const emailToToken: {[_: string]: string} = {};
 const tokenToPort: {[_: string]: number} = {};
+const tokenToQueryString: {[_: string]: string} = {};
 
 async function handler(request: Request): Promise<Response> {
 	const url = new URL(request.url);
 
-	const token = request.headers.get("Cookie")?.split(", ").find(function(each) {
+	let token = request.headers.get("Cookie")?.split(", ").find(function(each) {
 		return each.startsWith("vscode-tkn=");
-	})?.split("=")[1] ?? url.searchParams.get("tkn");
+	})?.split("=")[1] ?? null;
+	if(token && Object.hasOwn(tokenToQueryString, token)) {
+		url.search = tokenToQueryString[token];
+		delete tokenToQueryString[token];
+		return Response.redirect(String(url));
+	}
+	if(!token)
+		token = url.searchParams.get("tkn");
 	if(token && Object.hasOwn(tokenToPort, token))
 		return proxy(request, tokenToPort[token]);
 
@@ -29,20 +38,16 @@ async function handler(request: Request): Promise<Response> {
 		url.pathname = "/";
 		return Response.redirect(String(url));
 	}
-	if(!url.search)
+
+	const code = url.searchParams.get("code");
+	if(!code)
 		return Response.redirect(authUrl(
 			config!,
 			"https://www.googleapis.com/auth/drive",
 			"select_account",
 			true,
+			encode(url.search),
 		));
-
-	const code = url.searchParams.get("code");
-	if(!code)
-		return new Response(
-			"Missing query string parameter: 'code'",
-			{status: Status.BadRequest},
-		);
 
 	const tokens = await obtainToken(config!, code);
 	if(!tokens.success)
@@ -97,6 +102,10 @@ async function handler(request: Request): Promise<Response> {
 		vsCodeToken = token;
 		console.log("Started new VSCode instance for user " + email + " on port " + port);
 	}
+
+	const state = url.searchParams.get("state");
+	if(state)
+		tokenToQueryString[vsCodeToken] = new TextDecoder().decode(decode(state));
 	url.search = "?tkn=" + vsCodeToken;
 	return Response.redirect(String(url));
 }
