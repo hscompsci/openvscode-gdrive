@@ -15,8 +15,12 @@ import { BACKING_FILE, getToken, setToken } from "./refresh_tokens.ts";
 const CONFIG_FILE = "config.json";
 
 const emailToToken: {[_: string]: string} = {};
-const tokenToPort: {[_: string]: number} = {};
-const tokenToQueryString: {[_: string]: string} = {};
+const tokenToEditor: {[_: string]: Editor} = {};
+
+type Editor = {
+	port: number,
+	queryString?: string,
+};
 
 async function handler(request: Request): Promise<Response> {
 	const url = new URL(request.url);
@@ -24,15 +28,15 @@ async function handler(request: Request): Promise<Response> {
 	let token = request.headers.get("Cookie")?.split(", ").find(function(each) {
 		return each.startsWith("vscode-tkn=");
 	})?.split("=")[1] ?? null;
-	if(token && Object.hasOwn(tokenToQueryString, token)) {
-		url.search = tokenToQueryString[token];
-		delete tokenToQueryString[token];
+	if(token && tokenToEditor[token]?.queryString) {
+		url.search = tokenToEditor[token].queryString!;
+		delete tokenToEditor[token].queryString;
 		return Response.redirect(String(url));
 	}
 	if(!token)
 		token = url.searchParams.get("tkn");
-	if(token && Object.hasOwn(tokenToPort, token))
-		return proxy(request, tokenToPort[token]);
+	if(token && Object.hasOwn(tokenToEditor, token))
+		return proxy(request, tokenToEditor[token]);
 
 	if(url.pathname != "/") {
 		url.pathname = "/";
@@ -83,7 +87,7 @@ async function handler(request: Request): Promise<Response> {
 			"Reusing user "
 				+ email
 				+ "'s existing VSCode instance at port "
-				+ tokenToPort[vsCodeToken]
+				+ tokenToEditor[vsCodeToken].port
 		);
 	else {
 		const vscode = Deno.run({
@@ -97,7 +101,9 @@ async function handler(request: Request): Promise<Response> {
 		vscode.stdin.write(stdin.encode(expiry.toISOString() + "\n"));
 
 		const {port, token} = await parsePortAndToken(vscode.stdout);
-		tokenToPort[token] = port;
+		tokenToEditor[token] = {
+			port,
+		};
 		emailToToken[email] = token;
 		vsCodeToken = token;
 		console.log("Started new VSCode instance for user " + email + " on port " + port);
@@ -105,15 +111,15 @@ async function handler(request: Request): Promise<Response> {
 
 	const state = url.searchParams.get("state");
 	if(state)
-		tokenToQueryString[vsCodeToken] = new TextDecoder().decode(decode(state));
+		tokenToEditor[vsCodeToken].queryString = new TextDecoder().decode(decode(state));
 	url.search = "?tkn=" + vsCodeToken;
 	return Response.redirect(String(url));
 }
 
-function proxy(request: Request, port: number): Promise<Response> {
+function proxy(request: Request, editor: Editor): Promise<Response> {
 	const url = new URL(request.url);
 	url.hostname = "localhost";
-	url.port = String(port);
+	url.port = String(editor.port);
 
 	if(request.headers.get("upgrade") != "websocket")
 		return fetch(new Request(String(url), request), {redirect: "manual"});
