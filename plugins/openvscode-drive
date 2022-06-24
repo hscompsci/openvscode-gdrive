@@ -1,8 +1,12 @@
 #!/bin/sh
 
+readonly X11_PORT="5900"
+readonly VNC_PORT="6080"
+
 read access_token
 read refresh_token
 read expiry
+read display
 cd
 
 cat <<-tac >.rclone.conf
@@ -21,5 +25,13 @@ do
 	fi
 done
 cd
+
+if which novnc_proxy >/dev/null
+then
+	Xvnc -SecurityTypes None -localhost -nolisten local ":$display" &
+	novnc_proxy --vnc ":$((X11_PORT + display))" --listen $((VNC_PORT + display)) &
+
+	export DISPLAY=":$display"
+fi
 
 exec unshare -U openvscode-server "$@"

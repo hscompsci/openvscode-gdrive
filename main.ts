@@ -17,12 +17,17 @@ const SHUTDOWN_TIMEOUT_S = 90;
 
 const emailToToken: {[_: string]: string} = {};
 const tokenToEditor: {[_: string]: Editor} = {};
+const nextDisplay = [1];
 
 type Editor = {
-	port: number,
 	process: Deno.Process,
+	port: number,
+
+	display: number,
+
 	refCount: number,
 	shutdownHandle?: number,
+
 	queryString?: string,
 };
 
@@ -94,6 +99,10 @@ async function handler(request: Request): Promise<Response> {
 				+ tokenToEditor[vsCodeToken].port
 		);
 	else {
+		let display = nextDisplay.pop()!;
+		if(!nextDisplay.length)
+			nextDisplay.push(display + 1);
+
 		const process = Deno.run({
 			cmd: ["chroot/jail", "vscode", "-c", "openvscode-drive", "--port", "0"],
 			stdin: "piped",
@@ -103,11 +112,13 @@ async function handler(request: Request): Promise<Response> {
 		process.stdin.write(stdin.encode(tokens.access_token + "\n"));
 		process.stdin.write(stdin.encode(tokens.refresh_token + "\n"));
 		process.stdin.write(stdin.encode(expiry.toISOString() + "\n"));
+		process.stdin.write(stdin.encode(display + "\n"));
 
 		const {port, token} = await parsePortAndToken(process.stdout);
 		tokenToEditor[token] = {
-			port,
 			process,
+			port,
+			display,
 			refCount: 0,
 		};
 		emailToToken[email] = token;
@@ -140,6 +151,7 @@ function proxy(request: Request, token: string): Promise<Response> {
 		delete tokenToEditor[token];
 		editor.process.kill("SIGHUP");
 		await editor.process.status();
+		nextDisplay.push(editor.display);
 	};
 	const decrRefCount = function() {
 		--editor.refCount;
