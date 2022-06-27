@@ -135,10 +135,11 @@ function proxy(request: Request, token: string): Promise<Response> {
 
 	const serverSocket = new WebSocket(String(url));
 	const {response, socket} = Deno.upgradeWebSocket(request);
-	const shutdown = function() {
+	const shutdown = async function() {
 		console.log("Shutting down port " + editor.port + " VSCode instance");
 		delete tokenToEditor[token];
-		editor.process.kill("SIGINT");
+		editor.process.kill("SIGHUP");
+		await editor.process.status();
 	};
 	const decrRefCount = function() {
 		--editor.refCount;
