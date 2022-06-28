@@ -28,6 +28,10 @@ cd
 
 if which novnc_proxy >/dev/null
 then
+	mkdir /tmp/.cache
+	mkdir -p .cache
+	mount -B /tmp/.cache .cache
+
 	Xvnc -SecurityTypes None -localhost -nolisten local ":$display" &
 	novnc_proxy --vnc ":$((X11_PORT + display))" --listen $((VNC_PORT + display)) &
 
