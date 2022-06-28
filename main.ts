@@ -24,6 +24,7 @@ type Editor = {
 	port: number,
 
 	display: number,
+	displayPort?: number,
 
 	refCount: number,
 	shutdownHandle?: number,
@@ -114,10 +115,11 @@ async function handler(request: Request): Promise<Response> {
 		process.stdin.write(stdin.encode(expiry.toISOString() + "\n"));
 		process.stdin.write(stdin.encode(display + "\n"));
 
-		const {port, token} = await parsePortAndToken(process.stdout);
+		const {port, displayPort, token} = await parsePortsAndToken(process.stdout);
 		tokenToEditor[token] = {
 			process,
 			port,
+			displayPort,
 			display,
 			refCount: 0,
 		};
@@ -133,15 +135,29 @@ async function handler(request: Request): Promise<Response> {
 	return Response.redirect(String(url));
 }
 
-function proxy(request: Request, token: string): Promise<Response> {
+async function proxy(request: Request, token: string): Promise<Response> {
 	const editor = tokenToEditor[token];
 	const url = new URL(request.url);
 	url.hostname = "localhost";
 	url.port = String(editor.port);
 
-	if(request.headers.get("upgrade") != "websocket")
-		return fetch(new Request(String(url), request), {redirect: "manual"});
-	else
+	if(request.headers.get("upgrade") != "websocket") {
+		let response = await fetch(new Request(String(url), request), {redirect: "manual"});
+		if(editor.displayPort && url.pathname.endsWith("/workbench.js"))
+			response = new Response(
+				await response.text()
+					+ "\nif("
+					+ "location.search.startsWith(\"?folder=\")"
+					+ "|| location.search.startsWith(\"?workspace=\")"
+					+ ")"
+					+ "\nopen(\"http://\" + location.hostname + \":"
+					+ editor.displayPort
+					+ "/vnc_lite.html\", \"_blank\", \"popup\");"
+				,
+				response,
+			);
+		return response;
+	} else
 		url.protocol = "ws";
 
 	const serverSocket = new WebSocket(String(url));
@@ -204,15 +220,26 @@ function proxy(request: Request, token: string): Promise<Response> {
 	return Promise.resolve(response);
 }
 
-async function parsePortAndToken(stdout: Deno.Reader): Promise<{port: number, token: string}> {
+async function parsePortsAndToken(
+	stdout: Deno.Reader,
+): Promise<{port: number, displayPort?: number, token: string}> {
 	const lines = new TextProtoReader(new BufReader(stdout));
 	let line;
-	while(!(line = (await lines.readLine())?.match(
+	let vsCodeLine;
+	let noVncLine;
+	while(!(vsCodeLine = (line = await lines.readLine())?.match(
 		/^Web UI available at http:\/\/localhost:([0-9]+)\/\?tkn=(.+)$/
-	)));
+	)))
+		if(!noVncLine)
+			noVncLine = line?.match(/^    http:\/\/.+:([0-9]+)/);
+
+	let displayPort;
+	if(noVncLine)
+		displayPort = Number(noVncLine[1]);
 	return {
-		port: Number(line[1]),
-		token: line[2],
+		port: Number(vsCodeLine[1]),
+		displayPort,
+		token: vsCodeLine![2],
 	};
 }
 
