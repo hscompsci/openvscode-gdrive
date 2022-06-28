@@ -1,5 +1,6 @@
 #!/bin/sh
 
+readonly DISPLAY_MODE="800x600"
 readonly X11_PORT="5900"
 readonly VNC_PORT="6080"
 
@@ -37,6 +38,7 @@ then
 	sleep 2
 
 	export DISPLAY=":$display"
+	[ -n "$DISPLAY_MODE" ] && xrandr --output VNC-0 --mode "$DISPLAY_MODE"
 fi
 
 exec unshare -U openvscode-server "$@"
