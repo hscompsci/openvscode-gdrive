@@ -34,6 +34,7 @@ then
 
 	Xvnc -SecurityTypes None -localhost -nolisten local ":$display" 2>/dev/null &
 	novnc_proxy --vnc ":$((X11_PORT + display))" --listen $((VNC_PORT + display)) 2>/dev/null &
+	sleep 2
 
 	export DISPLAY=":$display"
 fi
