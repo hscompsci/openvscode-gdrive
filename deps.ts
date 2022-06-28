@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-run --check
+#!/usr/bin/env -S deno run --allow-net --allow-read --allow-write --allow-run --check
 
 import { ROOT, exists } from "./filesystem.ts";
 
@@ -32,6 +32,26 @@ Deno.renameSync(dropExtension(rclone) + "/rclone", ROOT + "/bin/rclone");
 Deno.linkSync("plugins/openvscode-drive", ROOT + "/bin/openvscode-drive");
 Deno.remove(dropExtension(rclone), {recursive: true});
 
+if(confirm("Enable support for GUI applications via VNC?")) {
+	let tigervnc = await sourceForgeFileUrl("tigervnc", "tigervnc", ".x86_64.tar.gz");
+	tigervnc = await download(tigervnc);
+	await unpack(tigervnc, ["tar", "xf"]);
+	Deno.renameSync(dropExtension(tigervnc) + "/usr/bin/Xvnc", ROOT + "/bin/Xvnc");
+	Deno.remove(dropExtension(tigervnc), {recursive: true});
+
+	let novnc = await releaseUrl("novnc", "novnc");
+	novnc = await download(novnc, "noVNC");
+	await unpack(novnc, ["tar", "xf"]);
+	Deno.renameSync(dropExtension(novnc), ROOT + "/opt");
+
+	let websockify = await releaseUrl("novnc", "websockify");
+	websockify = await download(websockify, "websockify");
+	await unpack(websockify, ["tar", "xf"]);
+	Deno.renameSync(dropExtension(websockify), ROOT + "/opt/utils/websockify");
+
+	Deno.symlinkSync("../opt/utils/novnc_proxy", ROOT + "/bin/novnc_proxy");
+}
+
 console.log("All dependencies fetched!");
 
 async function releaseUrl(org: string, repo: string, suffix?: string): Promise<string> {
@@ -49,6 +69,23 @@ async function releaseUrl(org: string, repo: string, suffix?: string): Promise<s
 	} else
 		// Download source release.
 		return "https://github.com/" + org + "/" + repo + "/archive/refs/tags/" + info.tag_name + ".tar.gz";
+}
+
+async function sourceForgeFileUrl(org: string, repo: string, suffix: string): Promise<string> {
+	const info = await promptVersion(org, repo);
+	const listingUrl = info.body.match(/^https:\/\/.+/m);
+	if(!listingUrl) {
+		console.error("Unexpected error parsing latest " + repo + " release description!");
+		Deno.exit(4);
+	}
+
+	const listing = await (await fetch(listingUrl[0])).text();
+	const fileUrl = listing.match(new RegExp("https://[^\"]+" + suffix));
+	if(!fileUrl) {
+		console.error("Unexpected error parsing " + repo + " SourceForge files listing!");
+		Deno.exit(5);
+	}
+	return fileUrl[0];
 }
 
 async function promptVersion(org: string, repo: string): Promise<ReleaseInfo> {
@@ -88,11 +125,13 @@ function basename(url: string): string {
 }
 
 function dropExtension(url: string): string {
-	return basename(url).replace(/\.[^0-9].+/, "");
+	return basename(url).replace(/\.[^0-9]+$/, "");
 }
 
-async function download(url: string) {
-	const filename = basename(url);
+async function download(url: string, product?: string): Promise<string> {
+	let filename = basename(url);
+	if(product)
+		filename = product + "-" + filename.slice(1);
 	if(await exists(filename))
 		console.warn("Skipping download of " + filename + " that already exists.");
 	else {
@@ -101,6 +140,7 @@ async function download(url: string) {
 		const body = await fetch(url);
 		await Deno.writeFile(filename, new Uint8Array(await body.arrayBuffer()));
 	}
+	return filename;
 }
 
 async function unpack(filename: string, cmd: Readonly<string[]>): Promise<boolean> {
@@ -113,6 +153,7 @@ async function unpack(filename: string, cmd: Readonly<string[]>): Promise<boolea
 
 type ReleaseInfo = {
 	tag_name: string,
+	body: string,
 	assets: ReleaseAsset[],
 };
 

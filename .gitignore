@@ -1,6 +1,9 @@
 openvscode-server-v*
 config.json
+noVNC-*
 rclone-v*
 refresh_tokens.json
+tigervnc-*
 vendor
 vscode
+websockify-*
