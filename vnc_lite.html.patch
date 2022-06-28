@@ -1,0 +1,12 @@
+diff --git 1/vnc_lite.html 2/vnc_lite.html
+index 8e2f5cb..02ea33c 100644
+--- 1/vnc_lite.html
++++ 2/vnc_lite.html
+@@ -68,6 +68,7 @@
+         // successfully connected to a server
+         function connectedToServer(e) {
+             status("Connected to " + desktopName);
++            sizeToContent();
+         }
+ 
+         // This function is called when we are disconnected

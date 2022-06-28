@@ -49,6 +49,7 @@ if(confirm("Enable support for GUI applications via VNC?")) {
 	await unpack(websockify, ["tar", "xf"]);
 	Deno.renameSync(dropExtension(websockify), ROOT + "/opt/utils/websockify");
 
+	await Deno.run({cmd: ["patch", ROOT + "/opt/vnc_lite.html", "vnc_lite.html.patch"]}).status();
 	Deno.symlinkSync("../opt/utils/novnc_proxy", ROOT + "/bin/novnc_proxy");
 }
 
