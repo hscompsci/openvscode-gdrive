@@ -32,8 +32,8 @@ then
 	mkdir -p .cache
 	mount -B /tmp/.cache .cache
 
-	Xvnc -SecurityTypes None -localhost -nolisten local ":$display" &
-	novnc_proxy --vnc ":$((X11_PORT + display))" --listen $((VNC_PORT + display)) &
+	Xvnc -SecurityTypes None -localhost -nolisten local ":$display" 2>/dev/null &
+	novnc_proxy --vnc ":$((X11_PORT + display))" --listen $((VNC_PORT + display)) 2>/dev/null &
 
 	export DISPLAY=":$display"
 fi
