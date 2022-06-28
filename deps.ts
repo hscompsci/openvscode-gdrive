@@ -34,7 +34,7 @@ Deno.remove(dropExtension(rclone), {recursive: true});
 
 console.log("All dependencies fetched!");
 
-async function releaseUrl(org: string, repo: string, suffix: string): Promise<string> {
+async function releaseUrl(org: string, repo: string, suffix?: string): Promise<string> {
 	let info = await releaseInfo(org, repo);
 	const tag = info.tag_name.match(/([^0-9]+)(.+)/);
 	if(!tag) {
@@ -46,14 +46,19 @@ async function releaseUrl(org: string, repo: string, suffix: string): Promise<st
 	if(version != tag[2])
 		info = await releaseInfo(org, repo, tag[1] + version);
 
-	const file = info.assets.find(function(each) {
-		return each.name.endsWith(suffix);
-	});
-	if(!file) {
-		console.error("Release " + version + " of " + repo + " not available for Linux!");
-		Deno.exit(3);
-	}
-	return file.browser_download_url;
+	if(suffix) {
+		// Download binary release.
+		const file = info.assets.find(function(each) {
+			return each.name.endsWith(suffix);
+		});
+		if(!file) {
+			console.error("Release " + info.tag_name + " of " + repo + " not available for Linux!");
+			Deno.exit(3);
+		}
+		return file.browser_download_url;
+	} else
+		// Download source release.
+		return "https://github.com/" + org + "/" + repo + "/archive/refs/tags/v" + version + ".tar.gz";
 }
 
 async function releaseInfo(org: string, repo: string, tag = ""): Promise<ReleaseInfo> {
