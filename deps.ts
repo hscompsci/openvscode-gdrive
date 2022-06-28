@@ -10,6 +10,14 @@ if(await exists(ROOT)) {
 	Deno.exit(1);
 }
 
+console.log("Downloading container management tools...")
+if(!await exists("chroot/jail"))
+	await Deno.run({cmd: ["git", "submodule", "update", "--init"]}).status();
+
+console.log("Vendoring TypeScript dependencies...");
+if(!await exists("vendor"))
+	await Deno.run({cmd: ["deno", "vendor", "main.ts"]}).status();
+
 const vscode = await releaseUrl("gitpod-io", "openvscode-server", "-linux-x64.tar.gz");
 await download(vscode);
 await unpack(basename(vscode), ["tar", "xf"]);
@@ -17,14 +25,6 @@ await unpack(basename(vscode), ["tar", "xf"]);
 const rclone = await releaseUrl("rclone", "rclone", "-linux-amd64.zip");
 await download(rclone);
 await unpack(basename(rclone), ["unzip"]);
-
-console.log("Vendoring TypeScript dependencies...");
-if(!await exists("vendor"))
-	await Deno.run({cmd: ["deno", "vendor", "main.ts"]}).status();
-
-console.log("Downloading container management tools...")
-if(!await exists("chroot/jail"))
-	await Deno.run({cmd: ["git", "submodule", "update", "--init"]}).status();
 
 console.log("Preparing root directory for jails...");
 Deno.renameSync(dropExtension(vscode), ROOT);
