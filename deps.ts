@@ -35,17 +35,7 @@ Deno.remove(dropExtension(rclone), {recursive: true});
 console.log("All dependencies fetched!");
 
 async function releaseUrl(org: string, repo: string, suffix?: string): Promise<string> {
-	let info = await releaseInfo(org, repo);
-	const tag = info.tag_name.match(/([^0-9]+)(.+)/);
-	if(!tag) {
-		console.error("Unexpected error parsing latest " + repo + " tag name!");
-		Deno.exit(2);
-	}
-
-	const version = prompt(repo + " version to download?", tag[2]);
-	if(version != tag[2])
-		info = await releaseInfo(org, repo, tag[1] + version);
-
+	const info = await promptVersion(org, repo);
 	if(suffix) {
 		// Download binary release.
 		const file = info.assets.find(function(each) {
@@ -58,7 +48,22 @@ async function releaseUrl(org: string, repo: string, suffix?: string): Promise<s
 		return file.browser_download_url;
 	} else
 		// Download source release.
-		return "https://github.com/" + org + "/" + repo + "/archive/refs/tags/v" + version + ".tar.gz";
+		return "https://github.com/" + org + "/" + repo + "/archive/refs/tags/" + info.tag_name + ".tar.gz";
+}
+
+async function promptVersion(org: string, repo: string): Promise<ReleaseInfo> {
+	let info = await releaseInfo(org, repo);
+	const tag = info.tag_name.match(/([^0-9]+)(.+)/);
+	if(!tag) {
+		console.error("Unexpected error parsing latest " + repo + " tag name!");
+		Deno.exit(2);
+	}
+
+	const version = prompt(repo + " version to download?", tag[2]);
+	if(version != tag[2])
+		info = await releaseInfo(org, repo, tag[1] + version);
+
+	return info;
 }
 
 async function releaseInfo(org: string, repo: string, tag = ""): Promise<ReleaseInfo> {
