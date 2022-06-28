@@ -1,5 +1,5 @@
 diff --git 1/vnc_lite.html 2/vnc_lite.html
-index 8e2f5cb..02ea33c 100644
+index 8e2f5cb..245b8ef 100644
 --- 1/vnc_lite.html
 +++ 2/vnc_lite.html
 @@ -68,6 +68,7 @@
@@ -10,3 +10,35 @@ index 8e2f5cb..02ea33c 100644
          }
  
          // This function is called when we are disconnected
+@@ -101,9 +102,7 @@
+         }
+ 
+         // Show a status text in the top bar
+-        function status(text) {
+-            document.getElementById('status').textContent = text;
+-        }
++        function status(text) {}
+ 
+         // This function extracts the value of one variable from the
+         // query string. If the variable isn't defined in the URL
+@@ -132,9 +131,6 @@
+             return defaultValue;
+         }
+ 
+-        document.getElementById('sendCtrlAltDelButton')
+-            .onclick = sendCtrlAltDel;
+-
+         // Read parameters specified in the URL query string
+         // By default, use the host and port of server that served this file
+         const host = readQueryVariable('host', window.location.hostname);
+@@ -178,10 +174,6 @@
+ </head>
+ 
+ <body>
+-    <div id="top_bar">
+-        <div id="status">Loading</div>
+-        <div id="sendCtrlAltDelButton">Send CtrlAltDel</div>
+-    </div>
+     <div id="screen">
+         <!-- This is where the remote screen will appear -->
+     </div>
