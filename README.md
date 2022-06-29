@@ -140,3 +140,101 @@ assistance.
 1. Click the **download JSON** button in the resulting dialog, and save the file for later:
 
    ![download JSON button](docs/download_json.png)
+
+
+### Optional: Creating a Google Cloud virtual machine
+
+This section illustrates how to set up a hosted VM on Google Cloud, which is free in the short term
+under the service's trial.  There is no technical reason this project has to be hosted on Google
+infrastructure.  Skip this section if you already have a server or VM available.
+
+1. From the Google Cloud console at [console.cloud.google.com](https://console.cloud.google.com),
+   click the **activate** button in the upper-right corner of the page and follow the resulting
+   steps to start your free trial:
+
+   ![activate button](docs/activate.png)
+
+1. In the upper-left corner of the page, click **Select a project** or the name of the selected
+   project:
+
+   ![select a project button](docs/select_a_project_button.png)
+
+1. In the upper-right corner of the resulting dialog, click **new project**:
+
+   ![select a project dialog](docs/select_a_project_dialog.png)
+
+1. Give your project a(n internal) name and hit **create**:
+
+   ![new project page](docs/new_project.png)
+
+1. Once the Notifications panel shows a green check mark, click **select project**:
+
+   ![notifications](docs/notifications.png)
+
+1. If no sidebar is open on the left side of the page, click the hamburger button in the upper left:
+
+   ![navigation menu button](docs/hamburger.png)
+
+1. In the sidebar on the left, hover over **VPC network** and select **IP addresses**:
+
+   ![VPC network menu](docs/vpc_network.png)
+
+1. Click the **reserve external static address** button:
+
+   ![reserve external static address button](docs/ip_addresses.png)
+
+1. Give the IP address a name, set its Network Service Tier to **Standard**, and hit **reserve**:
+
+   ![reserve a static address page](docs/reserve_a_static_address.png)
+
+1. Take note of the IP address on the resulting page, as you will need it later:
+
+   ![IP address display](docs/ip_address.png)
+
+1. If you do not want your instance to support GUI applications, skip this step.  Otherwise, in the
+   sidebar on the left, hover over **VPC network** and select **Firewall**.  Click the **create
+   firewall rule** button at the top.  Name the rule `allow-novnc`, leave Direction of traffic set
+   to Ingress and Action on match set to Allow, and set Targets to **All instances in the network**
+   and Source IPv4 ranges to `0.0.0.0/0`.  Check the **TCP** box and enter `6081-7999`.  Finally,
+   hit the **create** button.
+
+   ![create a firewall rule page](docs/create_a_firewall_rule.png)
+
+1. In the sidebar on the left, hover over **Compute Engine** and select **VM instances** under
+   virtual machines:
+
+   ![Compute Engine menu](docs/compute_engine.png)
+
+1. Click the blue **enable** button and wait for the spinner to go away and the page to reload:
+
+   ![enable button](docs/enable_compute_engine.png)
+
+1. At the top of the page, click **create instance**:
+
+   ![create instance button](docs/create_instance.png)
+
+1. Select a name and region, and leave the default Debian boot disk image selected:
+
+   ![name and region](docs/name_and_region.png)
+
+1. Under Firewall, check **Allow HTTPS traffic**:
+
+   ![firewall](docs/firewall.png)
+
+1. Expand **networking, disks, security, management, sole-tenancy**, expand **Networking**, then
+   expand **default** under Network interfaces:
+
+   ![network interfaces heading](docs/network_interfaces.png)
+
+1. Set **External IPv4 address** to the one you created above and hit **done**:
+
+   ![external IPv4 address dropdown](docs/external_ipv4_address.png)
+
+1. At the bottom of the page, hit the **create** button:
+
+   ![create button](docs/create.png)
+
+1. On the resulting page, wait for the Status spinner to turn into a green check mark, then click
+   the SSH button:
+
+   ![VM instances page](docs/vm_instances.png)
