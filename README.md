@@ -328,6 +328,13 @@ that domain to the server or VM's IP address.
 
 ## Daemonizing the server
 
-The easiest way to start a server process that survives the end of your login session is to either
-run `nohup ./main.ts` or invoke `./main.ts` from within a terminal multiplexer such as `screen` or
-`tmux`.
+The easiest way to start a server process that survives the end of your login session is to use
+`bash`'s `disown` builtin:
+```
+$ ./main.ts >disown.log 2>&1 &
+$ disown %1
+```
+
+Alternatively, you can run the server from within a terminal multiplexer such as `screen` or `tmux`.
+Note that disowning via `nohup` currently breaks garbage collection of stale sessions, thereby
+causing major resource leaks for instances shared by many users.
