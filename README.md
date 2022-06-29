@@ -217,7 +217,7 @@ infrastructure.  Skip this section if you already have a server or VM available.
 
    ![name and region](docs/name_and_region.png)
 
-1. Under Firewall, check **Allow HTTPS traffic**:
+1. Under Firewall, check both **Allow HTTP traffic** and **Allow HTTPS traffic**:
 
    ![firewall](docs/firewall.png)
 
@@ -238,3 +238,89 @@ infrastructure.  Skip this section if you already have a server or VM available.
    the SSH button:
 
    ![VM instances page](docs/vm_instances.png)
+
+
+## Starting the server
+
+Follow these steps to launch this project.  They assume you are sitting at a shell prompt on the
+server or VM on which you want to host your instance.  If the domain you used as the authorized
+redirect URI when registering the OAuth application does not yet point to the server or VM, first
+configure your domain's nameserver to serve an A record (and/or AAAA record, if applicable) mapping
+that domain to the server or VM's IP address.
+
+1. Run the command: `$ unshare --version`
+
+   If the current version number is less than 2.38, run the following additional commands, verifying
+   that the version number printed by the last line is now 2.38:
+   ```
+   $ sudo apt install binutils uidmap
+   $ curl -o util-linux-2.38-2_amd64.deb http://snapshot.debian.org/archive/debian/20220413T031740Z/pool/main/u/util-linux/util-linux_2.38-2_amd64.deb
+   $ ar x util-linux-2.38-2_amd64.deb data.tar.xz
+   $ tar xf data.tar.xz ./usr/bin/unshare
+   $ curl -o libc6_2.33-1_amd64.deb http://snapshot.debian.org/archive/debian/20211212T154235Z/pool/main/g/glibc/libc6_2.33-1_amd64.deb
+   $ ar x libc6_2.33-1_amd64.deb data.tar.xz
+   $ tar xf data.tar.xz ./lib/x86_64-linux-gnu/ld-2.33.so ./lib/x86_64-linux-gnu/libc.so.6 ./lib/x86_64-linux-gnu/libc-2.33.so ./lib/x86_64-linux-gnu/libnss_files.so.2 ./lib/x86_64-linux-gnu/libnss_files-2.33.so
+   $ rm data.tar.xz
+   $ cat >unshare <<-tac
+   #!/bin/sh
+
+   mypath="\`realpath "\$0"\`"
+   mydir="\`dirname "\$mypath"\`"
+   exec "\$mydir/lib/x86_64-linux-gnu/ld-2.33.so" --library-path "\$mydir/lib/x86_64-linux-gnu" "\$mydir/usr/bin/unshare" "\$@"
+   tac
+   $ chmod +x unshare
+   $ sudo ln -s "$PWD/unshare" /usr/local/bin
+   $ `which unshare` --version
+   ```
+
+1. Run the command: `$ sudo apt install python3-certbot-apache`
+
+1. Run the command: `$ sudo certbot --apache`
+
+1. Answer the configuration prompts and wait for verification to complete.  (Note that this requires
+   HTTP to be allowed through any firewall(s) in addition to HTTPS.)
+
+1. Run the command: `$ sudo cp /etc/apache2/sites-available/000-default-le-ssl.conf
+   /etc/apache2/sites-available/openvscode-gdrive.conf`
+
+1. Edit the `openvscode-gdrive.conf` file, replacing the `DocumentRoot` line with the following:
+   ```
+   ProxyPass / http://localhost:8000/
+   ProxyPassReverse / http://localhost:8000/
+   RewriteEngine on
+   RewriteCond %{HTTP:Upgrade} websocket [NC]
+   RewriteCond %{HTTP:Connection} upgrade [NC]
+   RewriteRule ^/?(.*) "ws://localhost:8000/$1" [P,L]
+   ```
+
+1. Run the command: `$ sudo a2dissite 000-default 000-default-le-ssl`
+
+1. Run the command: `$ sudo a2enmod proxy_http proxy_wstunnel`
+
+1. Run the command: `$ sudo a2ensite openvscode-gdrive`
+
+1. Run the command: `$ sudo systemctl restart apache2`
+
+1. Run the command: `$ sudo apt install unzip`
+
+1. Follow the Deno installation instructions at [deno.land](https://deno.land), being sure to use a
+   version no older than 1.21.0.
+
+1. Run the command: `$ sudo apt install git`
+
+1. Use `git clone` to clone this repository, then `cd` into the resulting directory.
+
+1. Run the command: `$ ./deps.ts`
+
+1. Answer each of the configuration prompts or hit enter to select its default.  If you want support
+   for GUI applications, be sure to answer `y` at the appropriate time.
+
+1. Upload the JSON file you downloaded when registering the OAuth application and rename it to
+   `config.json`.
+
+1. Run the command: `$ sudo apt install fuse3`
+
+1. If you do not want your instance to support GUI applications, skip this step.  Otherwise, run the
+   command: `$ sudo apt install xkb-data x11-xkb-utils x11-xserver-utils`
+
+1. Run the command: `$ ./main.ts`
