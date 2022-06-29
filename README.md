@@ -324,3 +324,10 @@ that domain to the server or VM's IP address.
    command: `$ sudo apt install xkb-data x11-xkb-utils x11-xserver-utils`
 
 1. Run the command: `$ ./main.ts`
+
+
+## Daemonizing the server
+
+The easiest way to start a server process that survives the end of your login session is to either
+run `nohup ./main.ts` or invoke `./main.ts` from within a terminal multiplexer such as `screen` or
+`tmux`.
