@@ -250,7 +250,19 @@ that domain to the server or VM's IP address.
 
 1. Run the command: `$ unshare --version`
 
-   If the current version number is less than 2.38, run the following additional commands, verifying
+   If the current version number is less than 2.38, upgrade the distribution to a newer version if
+   possible.  For instance, in the case of Debian, you should be running bookworm or later.  To
+   upgrade from bullseye:
+   ```
+   $ sudo sed -i s/bullseye/bookworm/g /etc/apt/sources.list
+   $ sudo apt update
+   $ sudo apt dist-upgrade
+   $ sudo apt autoremove --purge
+   $ sudo reboot
+   ```
+
+   If you have an old version of the command but upgrading your distribution is infeasible, instead
+   run the following additional commands, verifying
    that the version number printed by the last line is now 2.38:
    ```
    $ sudo apt install binutils uidmap
