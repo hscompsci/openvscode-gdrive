@@ -332,6 +332,16 @@ that domain to the server or VM's IP address.
 
 1. Run the command: `$ sudo apt install uidmap fuse3`
 
+1. Try running the command: `$ unshare --map-auto whoami`
+
+   It should output `nobody`.  If it instead tells you that you `don't exist`, you are hitting a
+   util-linux bug that manifests when your user ID does not match your primary group ID.  You may be
+   able to work around this by changing your primary group:
+   ```
+   $ sudo usermod -g `id -u` `whoami`
+   $ logout
+   ```
+
 1. If you do not want your instance to support GUI applications, skip this step.  Otherwise, run the
    command: `$ sudo apt install xkb-data x11-xkb-utils x11-xserver-utils`
 
