@@ -343,7 +343,7 @@ that domain to the server or VM's IP address.
 The easiest way to start a server process that survives the end of your login session is to use
 `bash`'s `disown` builtin:
 ```
-$ ./main.ts >disown.log 2>&1 &
+$ ./main.ts >>disown.log 2>&1 &
 $ disown %1
 ```
 
