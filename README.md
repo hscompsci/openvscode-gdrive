@@ -318,7 +318,7 @@ that domain to the server or VM's IP address.
 1. Upload the JSON file you downloaded when registering the OAuth application and rename it to
    `config.json`.
 
-1. Run the command: `$ sudo apt install fuse3`
+1. Run the command: `$ sudo apt install uidmap fuse3`
 
 1. If you do not want your instance to support GUI applications, skip this step.  Otherwise, run the
    command: `$ sudo apt install xkb-data x11-xkb-utils x11-xserver-utils`
