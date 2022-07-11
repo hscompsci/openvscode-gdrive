@@ -191,15 +191,6 @@ infrastructure.  Skip this section if you already have a server or VM available.
 
    ![IP address display](docs/ip_address.png)
 
-1. If you do not want your instance to support GUI applications, skip this step.  Otherwise, in the
-   sidebar on the left, hover over **VPC network** and select **Firewall**.  Click the **create
-   firewall rule** button at the top.  Name the rule `allow-novnc`, leave Direction of traffic set
-   to Ingress and Action on match set to Allow, and set Targets to **All instances in the network**
-   and Source IPv4 ranges to `0.0.0.0/0`.  Check the **TCP** box and enter `6081-7999`.  Finally,
-   hit the **create** button.
-
-   ![create a firewall rule page](docs/create_a_firewall_rule.png)
-
 1. In the sidebar on the left, hover over **Compute Engine** and select **VM instances** under
    virtual machines:
 
