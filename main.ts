@@ -153,9 +153,39 @@ async function handler(request: Request): Promise<Response> {
 
 async function proxy(request: Request, token: string): Promise<Response> {
 	const editor = tokenToEditor[token];
+	let shutdown = async function() {
+		console.log("Shutting down port " + editor.port + " VSCode instance");
+		delete tokenToEditor[token];
+		editor.process.kill("SIGHUP");
+		await editor.process.status();
+		nextDisplay.push(editor.display);
+	};
+	let decrRefCount = function() {
+		--editor.refCount;
+		if(editor.refCount == 0) {
+			console.log("Last client closed for port " + editor.port + " VSCode instance");
+			editor.shutdownHandle = setTimeout(shutdown, SHUTDOWN_TIMEOUT_S * 1000);
+		}
+	};
+	let incrRefCount = function() {
+		if(editor.refCount == 0 && editor.shutdownHandle) {
+			console.log("Client reopened for port " + editor.port + " VSCode instance");
+			clearTimeout(editor.shutdownHandle);
+			delete editor.shutdownHandle;
+		}
+		++editor.refCount;
+	};
+
 	const url = new URL(request.url);
 	url.hostname = "localhost";
-	url.port = String(editor.port);
+	if(url.pathname.startsWith("/vnc/") || url.pathname == "/websockify") {
+		url.port = String(editor.displayPort);
+		url.pathname = url.pathname.replace("/vnc/", "/");
+		shutdown = nop;
+		decrRefCount = nop;
+		incrRefCount = nop;
+	} else
+		url.port = String(editor.port);
 
 	if(request.headers.get("upgrade") != "websocket") {
 		let response = await fetch(new Request(String(url), request), {redirect: "manual"});
@@ -166,9 +196,7 @@ async function proxy(request: Request, token: string): Promise<Response> {
 					+ "location.search.startsWith(\"?folder=\")"
 					+ "|| location.search.startsWith(\"?workspace=\")"
 					+ ")"
-					+ "\nopen(\"http://\" + location.hostname + \":"
-					+ editor.displayPort
-					+ "/vnc_lite.html\", \"_blank\", \"popup\");"
+					+ "\nopen(\"vnc/vnc_lite.html\", \"_blank\", \"popup\");"
 				,
 				response,
 			);
@@ -178,28 +206,6 @@ async function proxy(request: Request, token: string): Promise<Response> {
 
 	const serverSocket = new WebSocket(String(url));
 	const {response, socket} = Deno.upgradeWebSocket(request);
-	const shutdown = async function() {
-		console.log("Shutting down port " + editor.port + " VSCode instance");
-		delete tokenToEditor[token];
-		editor.process.kill("SIGHUP");
-		await editor.process.status();
-		nextDisplay.push(editor.display);
-	};
-	const decrRefCount = function() {
-		--editor.refCount;
-		if(editor.refCount == 0) {
-			console.log("Last client closed for port " + editor.port + " VSCode instance");
-			editor.shutdownHandle = setTimeout(shutdown, SHUTDOWN_TIMEOUT_S * 1000);
-		}
-	};
-	const incrRefCount = function() {
-		if(editor.refCount == 0 && editor.shutdownHandle) {
-			console.log("Client reopened for port " + editor.port + " VSCode instance");
-			clearTimeout(editor.shutdownHandle);
-			delete editor.shutdownHandle;
-		}
-		++editor.refCount;
-	};
 
 	const serverBootstrap = deferred();
 	serverSocket.onopen = function() {
@@ -257,6 +263,10 @@ async function parsePortsAndToken(
 		displayPort,
 		token: vsCodeLine![2],
 	};
+}
+
+function nop(): Promise<void> {
+	return Promise.resolve();
 }
 
 const address: Partial<Deno.ListenOptions> = {
