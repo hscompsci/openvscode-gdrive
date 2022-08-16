@@ -54,12 +54,13 @@ async function handler(request: Request): Promise<Response> {
 	let token = request.headers.get("Cookie")?.split(", ").find(function(each) {
 		return each.startsWith("vscode-tkn=");
 	})?.split("=")[1] ?? null;
-	if(token && tokenToEditor[token]?.queryString) {
-		url.search = tokenToEditor[token].queryString!;
-		delete tokenToEditor[token].queryString;
-		return Response.redirect(String(url));
-	}
-	if(!token)
+	if(token && Object.hasOwn(tokenToEditor, token)) {
+		if(tokenToEditor[token].queryString) {
+			url.search = tokenToEditor[token].queryString!;
+			delete tokenToEditor[token].queryString;
+			return Response.redirect(String(url));
+		}
+	} else
 		token = url.searchParams.get("tkn");
 	if(token && Object.hasOwn(tokenToEditor, token))
 		return proxy(request, token);
