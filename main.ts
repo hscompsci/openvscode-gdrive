@@ -51,7 +51,7 @@ type Editor = {
 async function handler(request: Request): Promise<Response> {
 	const url = new URL(request.url);
 
-	let token = request.headers.get("Cookie")?.split(", ").find(function(each) {
+	let token = request.headers.get("Cookie")?.split("; ").find(function(each) {
 		return each.startsWith("vscode-tkn=");
 	})?.split("=")[1] ?? null;
 	if(token && Object.hasOwn(tokenToEditor, token)) {
